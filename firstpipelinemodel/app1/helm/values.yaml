@@ -1,6 +1,6 @@
-replicaCount: 1
+replicaCount: 3
 image:
-  repository: hello-world
+  repository: nginxdemos/hello
   tag: "latest"
   pullPolicy: IfNotPresent
 service:

@@ -1,0 +1,133 @@
+name: 'AKS Demo Pipeline'
+
+on:
+  workflow_dispatch:
+    inputs:
+      application_name:
+        description: 'Application Name'
+        required: true
+        type: choice
+        default: app1
+        options:
+        - app1
+        - app2
+      environment:
+        description: 'Environment type (dev, staging, production)'
+        required: true
+        type: choice
+        default: dev
+        options:
+        - dev
+        - staging
+        - production
+
+env:
+    ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+    ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+    ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+    ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+    ACR_SERVER: 'acrlitmusnaprodeu201.azurecr.io'
+    ACR_USERNAME: 'acrlitmusnaprodeu201'
+    ACR_PASSWORD: 'xxxxxxx'
+    DOCKERFILE_NAME: "Dockerfile"
+    DOCKERFILE_PATH: "firstpipelinemodel"
+    
+jobs:
+  build-and-test:
+    runs-on: coredev
+    environment: 'dev'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: |
+          cd /tmp
+          curl -sSLO https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          chmod +x yq_linux_amd64 && mv yq_linux_amd64 yq
+          curl -sSLO https://get.helm.sh/helm-v3.16.3-linux-amd64.tar.gz
+          tar -zxvf helm-v3.16.3-linux-amd64.tar.gz
+          cp linux-amd64/helm /tmp/helm
+          chmod +x /tmp/helm
+
+      - name: Load Deployment Configuration
+        id: config
+        run: |
+          cd firstpipelinemodel
+          # Carrega o namespace e tag da imagem do deploy-config.yaml
+          NAMESPACE=$(/tmp/yq e ".applications.${{ inputs.application_name }}.environments.${{ inputs.environment }}.namespace" deploy-config.yaml)
+          IMAGE_TAG=$(/tmp/yq e ".applications.${{ inputs.application_name }}.environments.${{ inputs.environment }}.image_tag" deploy-config.yaml)
+          REPLICA_COUNT=$(/tmp/yq e ".applications.${{ inputs.application_name }}.environments.${{ inputs.environment }}.replica_count" deploy-config.yaml)
+          
+          # Exporta as variáveis de ambiente para o pipeline
+          echo "NAMESPACE=$NAMESPACE" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          echo "REPLICA_COUNT=$REPLICA_COUNT" >> $GITHUB_ENV
+
+      #- name: Azure Login
+      #  run: |
+      #      az login --service-principal -u ${{ env.ARM_CLIENT_ID }} -p ${{ env.ARM_CLIENT_SECRET }} --tenant ${{ env.ARM_TENANT_ID }}
+
+      #- name: Set proper Azure Subsription
+      #  run: |
+      #      az account set -s ${{ env.ARM_SUBSCRIPTION_ID }}
+
+      - name: Determine Version Tag
+        id: version
+        run: |
+          # Define a versão baseada no branch e no SHA
+          if [ "${{ github.ref }}" == "refs/origin/k8spipelinedemo" ]; then
+            VERSION="v$(date +'%Y%m%d')-${{ github.sha }}"
+          else
+            VERSION="${{ inputs.environment }}-${{ github.sha }}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Version tag generated: $VERSION"
+
+      #- name: Build and Push Docker Image
+      #  run: |
+      #    #IMAGE_NAME="$ACR_SERVER/${{ inputs.application_name }}:${{ env.VERSION }}"
+      #    #docker build -t "$IMAGE_NAME" -f "${{ inputs.application_name }}/Dockerfile" .
+      #    #docker push "$IMAGE_NAME"
+      #    #az acr build --registry ${{ env.ACR_SERVER }} --image ${{ inputs.application_name }}:${{ env.VERSION }} --file ${{ env.DOCKERFILE_NAME }} ${{ env.DOCKERFILE_PATH }}
+
+      - name: Install Argo CD CLI
+        run: |
+          curl -sSL -o /tmp/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x /tmp/argocd
+
+      - name: Login to Argo CD
+        env:
+          ARGOCD_SERVER: '10.224.40.136'
+          ARGOCD_USERNAME: 'admin'
+          ARGOCD_PASSWORD: 'AAVAfMbOhzRJ4mVI'
+        run: |
+          /tmp/argocd login $ARGOCD_SERVER \
+            --username $ARGOCD_USERNAME \
+            --password $ARGOCD_PASSWORD \
+            --insecure
+
+      - name: Deploy to Argo CD with Helm
+        env:
+          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+        run: |
+          # Define o nome da aplicação ArgoCD para o ambiente
+          ARGOCD_APP_NAME="${{ inputs.application_name }}-${{ inputs.environment }}"
+
+          # Cria o comando helm template para gerar os manifests com os valores carregados do deploy-config.yaml
+          /tmp/helm template $ARGOCD_APP_NAME "${{ inputs.application_name }}/helm" \
+            --namespace "$NAMESPACE" \
+            --set image.repository="$DOCKER_REGISTRY/${{ inputs.application_name }}" \
+            --set image.tag="${{ env.VERSION }}" \
+            --set replicaCount="$REPLICA_COUNT" \
+            | /tmp/argocd app create $ARGOCD_APP_NAME \
+                --repo https://github.com/seu-usuario/my-apps.git \
+                --path "${{ inputs.application_name }}/helm" \
+                --dest-server https://kubernetes.default.svc \
+                --dest-namespace "$NAMESPACE" \
+                --directory-recurse \
+                --upsert
+
+          # Sincronizar a aplicação para aplicar as alterações
+          /tmp/argocd app sync $ARGOCD_APP_NAME

@@ -1,8 +1,8 @@
 replicaCount: 1
 image:
-  repository: acrlitmusnaprodeu201.azurecr.io/grafana
-  tag: "demotest"
+  repository: hello-world
+  tag: "latest"
   pullPolicy: IfNotPresent
 service:
   type: ClusterIP
-  port: 3000
+  port: 80

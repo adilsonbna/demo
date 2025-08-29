@@ -20,19 +20,19 @@
           <mxGeometry x="70" y="340" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="u-_lTUB7k0nEQF2Mt3rr-6" value="" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#B1DDF0;strokeColor=#BAC8D3;fontColor=#182E3E;" vertex="1" parent="1">
-          <mxGeometry x="570" y="270" width="120" height="60" as="geometry" />
+          <mxGeometry x="305" y="540" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="u-_lTUB7k0nEQF2Mt3rr-7" value="" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#B1DDF0;strokeColor=#BAC8D3;fontColor=#182E3E;" vertex="1" parent="1">
-          <mxGeometry x="290" y="230" width="120" height="60" as="geometry" />
+          <mxGeometry x="305" y="220" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="u-_lTUB7k0nEQF2Mt3rr-8" value="" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#B1DDF0;strokeColor=#BAC8D3;fontColor=#182E3E;" vertex="1" parent="1">
-          <mxGeometry x="100" y="480" width="120" height="60" as="geometry" />
+          <mxGeometry x="305" y="380" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="u-_lTUB7k0nEQF2Mt3rr-9" value="" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#B1DDF0;strokeColor=#BAC8D3;fontColor=#182E3E;" vertex="1" parent="1">
-          <mxGeometry x="260" y="400" width="120" height="60" as="geometry" />
+          <mxGeometry x="305" y="460" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="u-_lTUB7k0nEQF2Mt3rr-10" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B1DDF0;strokeColor=#BAC8D3;labelBackgroundColor=none;fontColor=#182E3E;" vertex="1" parent="1">
-          <mxGeometry x="290" y="240" width="120" height="60" as="geometry" />
+          <mxGeometry x="305" y="300" width="120" height="60" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
